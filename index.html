@@ -1,56 +1,31 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
+   <link rel="manifest" href="manifest.json">
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Mobile Space Shooter</title>
- <link rel="manifest" href="manifest.json">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catch the Ball</title>
 <style>
-    body {
-        margin: 0;
-        overflow: hidden;
-        background: black;
-    }
-    canvas {
-        display: block;
-        background: url('https://i.imgur.com/ZkVjU7O.jpg') repeat-y;
-        background-size: cover;
-    }
-    #score {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        color: white;
-        font-size: 24px;
-        z-index: 10;
-    }
+    body { margin:0; overflow:hidden; background: #222; }
+    canvas { display:block; background: #333; }
+    #score { position:absolute; top:10px; left:10px; color:white; font-size:24px; }
     #controls {
-        position: absolute;
-        bottom: 20px;
-        width: 100%;
-        display: flex;
-        justify-content: space-around;
-        z-index: 10;
+        position:absolute; bottom:20px; width:100%; display:flex; justify-content:space-around; z-index:10;
     }
     .btn {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.5);
-        text-align: center;
-        line-height: 60px;
-        font-size: 30px;
-        user-select: none;
+        width:60px; height:60px; border-radius:50%; background: rgba(255,255,255,0.5);
+        text-align:center; line-height:60px; font-size:30px; user-select:none;
     }
 </style>
 </head>
 <body>
 <div id="score">Score: 0</div>
 <canvas id="gameCanvas"></canvas>
-
 <div id="controls">
     <div class="btn" id="leftBtn">&#8592;</div>
-    <div class="btn" id="shootBtn">&#9650;</div>
     <div class="btn" id="rightBtn">&#8594;</div>
 </div>
 
@@ -67,78 +42,70 @@ window.addEventListener('resize', resizeCanvas);
 
 let score = 0;
 
-// Player
-const player = { x: canvas.width/2, y: canvas.height - 100, width: 50, height: 50, speed: 7, dx: 0 };
+// Basket
+const basket = { x: canvas.width/2, y: canvas.height-80, width: 100, height: 30, speed: 8, dx: 0 };
 
-// Bullets
-const bullets = [];
-
-// Enemies
-const enemies = [];
-let enemySpeed = 2;
-const enemyInterval = 1500;
+// Ball
+const balls = [];
+const ballSpeed = 5;
+const ballInterval = 1000;
 
 // Keyboard
 const keys = {};
 document.addEventListener('keydown', e => keys[e.key] = true);
 document.addEventListener('keyup', e => keys[e.key] = false);
 
-// Touch buttons
-document.getElementById('leftBtn').addEventListener('touchstart', () => player.dx = -player.speed);
-document.getElementById('leftBtn').addEventListener('touchend', () => player.dx = 0);
-document.getElementById('rightBtn').addEventListener('touchstart', () => player.dx = player.speed);
-document.getElementById('rightBtn').addEventListener('touchend', () => player.dx = 0);
-document.getElementById('shootBtn').addEventListener('touchstart', shoot);
+// Touch controls
+document.getElementById('leftBtn').addEventListener('touchstart', () => basket.dx = -basket.speed);
+document.getElementById('leftBtn').addEventListener('touchend', () => basket.dx = 0);
+document.getElementById('rightBtn').addEventListener('touchstart', () => basket.dx = basket.speed);
+document.getElementById('rightBtn').addEventListener('touchend', () => basket.dx = 0);
 
-// Player functions
-function drawPlayer() { ctx.fillStyle = 'cyan'; ctx.fillRect(player.x, player.y, player.width, player.height); }
-function movePlayer() {
-    if(keys['ArrowLeft']) player.x -= player.speed;
-    if(keys['ArrowRight']) player.x += player.speed;
-    player.x += player.dx;
-    if(player.x < 0) player.x = 0;
-    if(player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+// Basket functions
+function drawBasket() { ctx.fillStyle = 'orange'; ctx.fillRect(basket.x, basket.y, basket.width, basket.height); }
+function moveBasket() {
+    if(keys['ArrowLeft']) basket.x -= basket.speed;
+    if(keys['ArrowRight']) basket.x += basket.speed;
+    basket.x += basket.dx;
+    if(basket.x < 0) basket.x = 0;
+    if(basket.x + basket.width > canvas.width) basket.x = canvas.width - basket.width;
 }
 
-// Bullets
-function shoot() {
-    if(bullets.length < 5) bullets.push({x: player.x + player.width/2 - 5, y: player.y, width: 10, height: 20});
+// Balls
+function createBall() { balls.push({ x: Math.random()*(canvas.width-30), y: -30, radius: 15 }); }
+function drawBalls() { ctx.fillStyle = 'red'; balls.forEach(b => ctx.beginPath(), ctx.arc(b.x,b.y,b.radius,0,Math.PI*2), ctx.fill()); }
+function moveBalls() {
+    balls.forEach((b,i) => {
+        b.y += ballSpeed;
+        if(b.y - b.radius > canvas.height) balls.splice(i,1);
+    });
 }
-function drawBullets() { ctx.fillStyle = 'yellow'; bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height)); }
-function moveBullets() { bullets.forEach((b,i) => { b.y -= 10; if(b.y < 0) bullets.splice(i,1); }); }
-
-// Enemies
-function createEnemy() { const x = Math.random() * (canvas.width - 50); enemies.push({x: x, y: -50, width: 50, height: 50}); }
-function drawEnemies() { ctx.fillStyle = 'red'; enemies.forEach(e => ctx.fillRect(e.x, e.y, e.width, e.height)); }
-function moveEnemies() { enemies.forEach((e,i) => { e.y += enemySpeed; if(e.y > canvas.height) enemies.splice(i,1); }); }
 
 // Collisions
 function checkCollisions() {
-    bullets.forEach((b,bi) => {
-        enemies.forEach((e,ei) => {
-            if(b.x < e.x+e.width && b.x+b.width > e.x && b.y < e.y+e.height && b.y+b.height > e.y) {
-                bullets.splice(bi,1); enemies.splice(ei,1); score+=10;
-                document.getElementById('score').textContent = 'Score: '+score;
-            }
-        });
+    balls.forEach((b,i) => {
+        if(b.y + b.radius > basket.y && b.x > basket.x && b.x < basket.x + basket.width) {
+            balls.splice(i,1);
+            score++;
+            document.getElementById('score').textContent = 'Score: ' + score;
+        }
     });
 }
 
 // Game loop
 function update() {
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    movePlayer(); moveBullets(); moveEnemies();
-    drawPlayer(); drawBullets(); drawEnemies();
+    moveBasket(); moveBalls();
+    drawBasket(); drawBalls();
     checkCollisions();
     requestAnimationFrame(update);
 }
 
 // Start
-setInterval(createEnemy, enemyInterval);
+setInterval(createBall, ballInterval);
 update();
 </script>
-
-  <script>
+ <script>
     // Register Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
