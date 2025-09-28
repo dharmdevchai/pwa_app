@@ -1,24 +1,165 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>My PWA</title>
-
-  <!-- Manifest -->
+  <title>Space Shooter Game</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: black;
+      font-family: Arial, sans-serif;
+    }
 
-  <!-- Optional: Chrome theme color -->
-  <meta name="theme-color" content="#317EFB">
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: url('https://i.imgur.com/ZkVjU7O.jpg') repeat-y;
+      /* simple star background */
+      background-size: cover;
+    }
 
-  <!-- Optional: Hide address bar / search bar on mobile -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-
+    #score {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-size: 24px;
+      z-index: 10;
+    }
+  </style>
 </head>
+
 <body>
-  <h1>Hello PWA!</h1>
+  <div id="score">Score: 0</div>
+  <canvas id="gameCanvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let score = 0;
+
+    // Player spaceship
+    const player = {
+      x: canvas.width / 2,
+      y: canvas.height - 100,
+      width: 50,
+      height: 50,
+      speed: 7,
+      dx: 0
+    };
+
+    // Bullets
+    const bullets = [];
+
+    // Enemies
+    const enemies = [];
+    let enemySpeed = 2;
+    const enemyInterval = 1500;
+
+    // Key press
+    const keys = {};
+
+    // Event listeners
+    document.addEventListener('keydown', (e) => keys[e.key] = true);
+    document.addEventListener('keyup', (e) => keys[e.key] = false);
+
+    // Player functions
+    function drawPlayer() {
+      ctx.fillStyle = 'cyan';
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+    }
+
+    function movePlayer() {
+      if (keys['ArrowLeft'] && player.x > 0) player.x -= player.speed;
+      if (keys['ArrowRight'] && player.x + player.width < canvas.width) player.x += player.speed;
+      if (keys[' '] || keys['Space']) shoot();
+    }
+
+    // Shoot bullets
+    function shoot() {
+      if (bullets.length < 5) {
+        bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20 });
+      }
+    }
+
+    // Draw bullets
+    function drawBullets() {
+      ctx.fillStyle = 'yellow';
+      bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
+    }
+
+    // Move bullets
+    function moveBullets() {
+      bullets.forEach((b, i) => {
+        b.y -= 10;
+        if (b.y < 0) bullets.splice(i, 1);
+      });
+    }
+
+    // Create enemies
+    function createEnemy() {
+      const x = Math.random() * (canvas.width - 50);
+      enemies.push({ x: x, y: -50, width: 50, height: 50 });
+    }
+
+    // Draw enemies
+    function drawEnemies() {
+      ctx.fillStyle = 'red';
+      enemies.forEach(e => ctx.fillRect(e.x, e.y, e.width, e.height));
+    }
+
+    // Move enemies
+    function moveEnemies() {
+      enemies.forEach((e, i) => {
+        e.y += enemySpeed;
+        if (e.y > canvas.height) enemies.splice(i, 1);
+      });
+    }
+
+    // Collision detection
+    function checkCollisions() {
+      bullets.forEach((b, bi) => {
+        enemies.forEach((e, ei) => {
+          if (b.x < e.x + e.width && b.x + b.width > e.x &&
+            b.y < e.y + e.height && b.y + b.height > e.y) {
+            bullets.splice(bi, 1);
+            enemies.splice(ei, 1);
+            score += 10;
+            document.getElementById('score').textContent = 'Score: ' + score;
+          }
+        });
+      });
+    }
+
+    // Game loop
+    function update() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      movePlayer();
+      moveBullets();
+      moveEnemies();
+      drawPlayer();
+      drawBullets();
+      drawEnemies();
+      checkCollisions();
+      requestAnimationFrame(update);
+    }
+
+    // Start creating enemies
+    setInterval(createEnemy, enemyInterval);
+
+    // Start the game
+    update();
+  </script>
 
   <script>
     // Register Service Worker
@@ -40,4 +181,5 @@
     });
   </script>
 </body>
+
 </html>
