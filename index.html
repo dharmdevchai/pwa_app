@@ -1,165 +1,142 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Space Shooter Game</title>
-  <link rel="manifest" href="manifest.json">
-  <style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Mobile Space Shooter</title>
+ <link rel="manifest" href="manifest.json">
+<style>
     body {
-      margin: 0;
-      overflow: hidden;
-      background: black;
-      font-family: Arial, sans-serif;
+        margin: 0;
+        overflow: hidden;
+        background: black;
     }
-
     canvas {
-      display: block;
-      margin: 0 auto;
-      background: url('https://i.imgur.com/ZkVjU7O.jpg') repeat-y;
-      /* simple star background */
-      background-size: cover;
+        display: block;
+        background: url('https://i.imgur.com/ZkVjU7O.jpg') repeat-y;
+        background-size: cover;
     }
-
     #score {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      color: white;
-      font-size: 24px;
-      z-index: 10;
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        color: white;
+        font-size: 24px;
+        z-index: 10;
     }
-  </style>
+    #controls {
+        position: absolute;
+        bottom: 20px;
+        width: 100%;
+        display: flex;
+        justify-content: space-around;
+        z-index: 10;
+    }
+    .btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.5);
+        text-align: center;
+        line-height: 60px;
+        font-size: 30px;
+        user-select: none;
+    }
+</style>
 </head>
-
 <body>
-  <div id="score">Score: 0</div>
-  <canvas id="gameCanvas"></canvas>
+<div id="score">Score: 0</div>
+<canvas id="gameCanvas"></canvas>
 
-  <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
+<div id="controls">
+    <div class="btn" id="leftBtn">&#8592;</div>
+    <div class="btn" id="shootBtn">&#9650;</div>
+    <div class="btn" id="rightBtn">&#8594;</div>
+</div>
 
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
 
-    let score = 0;
+let score = 0;
 
-    // Player spaceship
-    const player = {
-      x: canvas.width / 2,
-      y: canvas.height - 100,
-      width: 50,
-      height: 50,
-      speed: 7,
-      dx: 0
-    };
+// Player
+const player = { x: canvas.width/2, y: canvas.height - 100, width: 50, height: 50, speed: 7, dx: 0 };
 
-    // Bullets
-    const bullets = [];
+// Bullets
+const bullets = [];
 
-    // Enemies
-    const enemies = [];
-    let enemySpeed = 2;
-    const enemyInterval = 1500;
+// Enemies
+const enemies = [];
+let enemySpeed = 2;
+const enemyInterval = 1500;
 
-    // Key press
-    const keys = {};
+// Keyboard
+const keys = {};
+document.addEventListener('keydown', e => keys[e.key] = true);
+document.addEventListener('keyup', e => keys[e.key] = false);
 
-    // Event listeners
-    document.addEventListener('keydown', (e) => keys[e.key] = true);
-    document.addEventListener('keyup', (e) => keys[e.key] = false);
+// Touch buttons
+document.getElementById('leftBtn').addEventListener('touchstart', () => player.dx = -player.speed);
+document.getElementById('leftBtn').addEventListener('touchend', () => player.dx = 0);
+document.getElementById('rightBtn').addEventListener('touchstart', () => player.dx = player.speed);
+document.getElementById('rightBtn').addEventListener('touchend', () => player.dx = 0);
+document.getElementById('shootBtn').addEventListener('touchstart', shoot);
 
-    // Player functions
-    function drawPlayer() {
-      ctx.fillStyle = 'cyan';
-      ctx.fillRect(player.x, player.y, player.width, player.height);
-    }
+// Player functions
+function drawPlayer() { ctx.fillStyle = 'cyan'; ctx.fillRect(player.x, player.y, player.width, player.height); }
+function movePlayer() {
+    if(keys['ArrowLeft']) player.x -= player.speed;
+    if(keys['ArrowRight']) player.x += player.speed;
+    player.x += player.dx;
+    if(player.x < 0) player.x = 0;
+    if(player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+}
 
-    function movePlayer() {
-      if (keys['ArrowLeft'] && player.x > 0) player.x -= player.speed;
-      if (keys['ArrowRight'] && player.x + player.width < canvas.width) player.x += player.speed;
-      if (keys[' '] || keys['Space']) shoot();
-    }
+// Bullets
+function shoot() {
+    if(bullets.length < 5) bullets.push({x: player.x + player.width/2 - 5, y: player.y, width: 10, height: 20});
+}
+function drawBullets() { ctx.fillStyle = 'yellow'; bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height)); }
+function moveBullets() { bullets.forEach((b,i) => { b.y -= 10; if(b.y < 0) bullets.splice(i,1); }); }
 
-    // Shoot bullets
-    function shoot() {
-      if (bullets.length < 5) {
-        bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20 });
-      }
-    }
+// Enemies
+function createEnemy() { const x = Math.random() * (canvas.width - 50); enemies.push({x: x, y: -50, width: 50, height: 50}); }
+function drawEnemies() { ctx.fillStyle = 'red'; enemies.forEach(e => ctx.fillRect(e.x, e.y, e.width, e.height)); }
+function moveEnemies() { enemies.forEach((e,i) => { e.y += enemySpeed; if(e.y > canvas.height) enemies.splice(i,1); }); }
 
-    // Draw bullets
-    function drawBullets() {
-      ctx.fillStyle = 'yellow';
-      bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
-    }
-
-    // Move bullets
-    function moveBullets() {
-      bullets.forEach((b, i) => {
-        b.y -= 10;
-        if (b.y < 0) bullets.splice(i, 1);
-      });
-    }
-
-    // Create enemies
-    function createEnemy() {
-      const x = Math.random() * (canvas.width - 50);
-      enemies.push({ x: x, y: -50, width: 50, height: 50 });
-    }
-
-    // Draw enemies
-    function drawEnemies() {
-      ctx.fillStyle = 'red';
-      enemies.forEach(e => ctx.fillRect(e.x, e.y, e.width, e.height));
-    }
-
-    // Move enemies
-    function moveEnemies() {
-      enemies.forEach((e, i) => {
-        e.y += enemySpeed;
-        if (e.y > canvas.height) enemies.splice(i, 1);
-      });
-    }
-
-    // Collision detection
-    function checkCollisions() {
-      bullets.forEach((b, bi) => {
-        enemies.forEach((e, ei) => {
-          if (b.x < e.x + e.width && b.x + b.width > e.x &&
-            b.y < e.y + e.height && b.y + b.height > e.y) {
-            bullets.splice(bi, 1);
-            enemies.splice(ei, 1);
-            score += 10;
-            document.getElementById('score').textContent = 'Score: ' + score;
-          }
+// Collisions
+function checkCollisions() {
+    bullets.forEach((b,bi) => {
+        enemies.forEach((e,ei) => {
+            if(b.x < e.x+e.width && b.x+b.width > e.x && b.y < e.y+e.height && b.y+b.height > e.y) {
+                bullets.splice(bi,1); enemies.splice(ei,1); score+=10;
+                document.getElementById('score').textContent = 'Score: '+score;
+            }
         });
-      });
-    }
+    });
+}
 
-    // Game loop
-    function update() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      movePlayer();
-      moveBullets();
-      moveEnemies();
-      drawPlayer();
-      drawBullets();
-      drawEnemies();
-      checkCollisions();
-      requestAnimationFrame(update);
-    }
+// Game loop
+function update() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    movePlayer(); moveBullets(); moveEnemies();
+    drawPlayer(); drawBullets(); drawEnemies();
+    checkCollisions();
+    requestAnimationFrame(update);
+}
 
-    // Start creating enemies
-    setInterval(createEnemy, enemyInterval);
-
-    // Start the game
-    update();
-  </script>
+// Start
+setInterval(createEnemy, enemyInterval);
+update();
+</script>
 
   <script>
     // Register Service Worker
@@ -181,5 +158,7 @@
     });
   </script>
 </body>
-
 </html>
+
+
+
