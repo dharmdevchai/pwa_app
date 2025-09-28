@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>My PWA</title>
+
+  <!-- Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Optional: Chrome theme color -->
+  <meta name="theme-color" content="#317EFB">
+
+  <!-- Optional: Hide address bar / search bar on mobile -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+</head>
+<body>
+  <h1>Hello PWA!</h1>
+
+  <script>
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(reg => console.log('Service Worker registered:', reg))
+          .catch(err => console.error('SW registration failed:', err));
+      });
+    }
+
+    // Optional: Listen for beforeinstallprompt
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      console.log("PWA install prompt available!");
+      // You can show your own "Install" button here
+    });
+  </script>
+</body>
+</html>
